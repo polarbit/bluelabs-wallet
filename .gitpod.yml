@@ -1,0 +1,12 @@
+# List the start up tasks. Learn more https://www.gitpod.io/docs/config-start-tasks/
+tasks:
+  - init: echo 'init script' # runs during prebuild
+    command: echo 'start script'
+  - name: Install go dependencies
+    init: |
+      go install github.com/go-delve/delve/cmd/dlv@latest
+      go install honnef.co/go/tools/cmd/staticcheck@latest
+
+vscode:
+  extensions:
+    - golang.go
