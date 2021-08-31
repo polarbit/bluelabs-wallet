@@ -2,6 +2,10 @@
 tasks:
   - init: echo 'init script' # runs during prebuild
     command: echo 'start script'
+  - name: install protoc
+    init: |
+      brew install protobuf
+      protoc --version
   - name: Install go dependencies
     init: |
       go install github.com/go-delve/delve/cmd/dlv@latest
