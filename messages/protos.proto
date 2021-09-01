@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/polarbit/bluelabs-wallet;bluelabs_wallet";
+option go_package = "github.com/polarbit/bluelabs-wallet/messages";
 
 // The greeting service definition.
 service Greeter {
