@@ -2,9 +2,39 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"time"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
 )
+
+type WalletCreator interface {
+}
+
+type Wallet struct {
+	wallet   walletState
+	lastTran walletTran
+}
+
+type walletState struct {
+	wid     string
+	balance float64
+	ver     int32
+	created time.Time
+}
+
+type walletTran struct {
+	wid         string
+	ver         float32
+	old_balance float32
+	new_balance float32
+	amount      float32
+	created     time.Time
+	by          string
+	ttype       string
+	// wid + wwer should be unique in db.
+	// op: transfer, win, play, deposit,
+}
 
 type hello struct{ Who string }
 type helloActor struct{}
@@ -21,15 +51,21 @@ func (state *helloActor) Receive(context actor.Context) {
 		fmt.Println("Restarting, actor is about restart")
 	case *hello:
 		fmt.Printf("Hello %v\n", msg.Who)
-		ch <- true
 		fmt.Println("Roger!")
 	}
 }
 
-var ch chan bool
-
 func main() {
-	ch = make(chan bool, 1)
+	sigs := make(chan os.Signal, 1)
+	done := make(chan bool, 1)
+
+	go func() {
+		sig := <-sigs
+		fmt.Println()
+		fmt.Println(sig)
+		time.Sleep(3 * time.Second)
+		done <- true
+	}()
 
 	system := actor.NewActorSystem()
 	props := actor.PropsFromProducer(func() actor.Actor { return &helloActor{} })
@@ -38,6 +74,9 @@ func main() {
 	// Send operations are non-blocking
 	system.Root.Send(pid, &hello{Who: "You"})
 	system.Root.Send(pid, &hello{Who: "You Too"})
-	<-ch
 	system.Root.StopFuture(pid).Wait()
+
+	<-done
+
+	fmt.Println("Bitti")
 }
