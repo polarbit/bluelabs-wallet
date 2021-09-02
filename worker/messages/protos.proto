@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package messages;
+option go_package = "messages";
+
+// import "google/protobuf/timestamp.proto";
+
+service Wallet {
+  rpc Create (CreateRequest) returns (CreateReply) {}
+
+  rpc Get (GetRequest) returns (GetReply) {}
+}
+
+message CreateRequest {
+  string  id = 1;
+  map<string,string> labels = 2;
+}
+
+message CreateReply {
+  WalletMessage wallet = 1;
+}
+
+message GetRequest {
+  string  id = 1;
+}
+
+message GetReply {
+  WalletMessage wallet = 1;
+}
+
+message WalletMessage {
+  string id = 1;
+  double balance = 2;
+  map<string,string> labels = 3;
+  // google.protobuf.Timestamp created = 4 ;
+}

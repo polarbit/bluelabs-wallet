@@ -1,18 +1,19 @@
 # List the start up tasks. Learn more https://www.gitpod.io/docs/config-start-tasks/
 tasks:
-  - init: echo 'init script' # runs during prebuild
-    command: echo 'start script'
   - name: install protoc
     init: |
-      brew install protobuf
       protoc --version
   - name: install go protoc plugins
     init: |
-      go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.26
-      go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1
+      go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+      go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+      go install github.com/gogo/protobuf/protoc-gen-gofast
+      go install github.com/gogo/protobuf/protoc-gen-gogoslick
+      go install github.com/AsynkronIT/protoactor-go/protobuf/protoc-gen-gograinv2@dev
   - name: Install go dependencies
     init: |
       go install github.com/go-delve/delve/cmd/dlv@latest
+      go install github.com/go-delve/delve/cmd/dlv@f95340ae1bf9 
       go install honnef.co/go/tools/cmd/staticcheck@latest
 
 vscode:
