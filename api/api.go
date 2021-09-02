@@ -6,40 +6,38 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"syscall"
 	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/polarbit/bluelabs-wallet/worker"
 )
 
 type (
-	CreateWalletReq struct {
+	CreateWalletRequest struct {
 		Labels map[string]string `json:"labels"`
 	}
 
-	CreateWalletRes struct {
-		Wallet WalletRep `json:"wallet"`
+	CreateWalletResponse struct {
+		Wallet WalletRepresentation `json:"wallet"`
 	}
 
-	WalletRep struct {
+	WalletRepresentation struct {
 		ID      string            `json:"id"`
 		Balance float64           `json:"balance"`
 		Labels  map[string]string `json:"labels"`
 		Created time.Time         `json:"created"`
 	}
 
-	CreateTransactionReq struct {
+	CreateTransactionRequest struct {
 		Amount      float64           `json:"amount"`
 		Description string            `json:"description"`
 		ExternalID  string            `json:"externalId"`
 		Labels      map[string]string `json:"labels"`
 	}
 
-	CreateTransactionRes struct {
-		Transaction *TransactionRep `json:"transaction"`
-		Wallet      *WalletRep      `json:"wallet"`
+	CreateTransactionResponse struct {
+		Transaction *TransactionRep       `json:"transaction"`
+		Wallet      *WalletRepresentation `json:"wallet"`
 	}
 
 	TransactionRep struct {
@@ -53,7 +51,7 @@ type (
 )
 
 var (
-	wallets      = map[string]*WalletRep{}
+	wallets      = map[string]*WalletRepresentation{}
 	seq          = 1
 	transactions = map[string]*TransactionRep{}
 )
@@ -63,14 +61,14 @@ var (
 //----------
 
 func createWallet(c echo.Context) error {
-	req := &CreateWalletReq{}
+	req := &CreateWalletRequest{}
 	if err := c.Bind(req); err != nil {
 		return err
 	}
 	id := strconv.Itoa(seq)
-	wallets[id] = &WalletRep{ID: id, Labels: req.Labels, Created: time.Now().UTC()}
+	wallets[id] = &WalletRepresentation{ID: id, Labels: req.Labels, Created: time.Now().UTC()}
 	seq++
-	return c.JSON(http.StatusCreated, CreateWalletRes{Wallet: *wallets[id]})
+	return c.JSON(http.StatusCreated, CreateWalletResponse{Wallet: *wallets[id]})
 }
 
 func getWallet(c echo.Context) error {
@@ -80,7 +78,7 @@ func getWallet(c echo.Context) error {
 
 func createTransaction(c echo.Context) error {
 	wid := c.Param("wid")
-	req := &CreateTransactionReq{}
+	req := &CreateTransactionRequest{}
 	if err := c.Bind(req); err != nil {
 		return err
 	}
@@ -98,7 +96,7 @@ func createTransaction(c echo.Context) error {
 
 	w := wallets[wid]
 
-	return c.JSON(http.StatusOK, CreateTransactionRes{Transaction: t, Wallet: w})
+	return c.JSON(http.StatusOK, CreateTransactionResponse{Transaction: t, Wallet: w})
 }
 
 func getTransaction(c echo.Context) error {
@@ -132,21 +130,20 @@ func StartAPI() {
 	e.POST("wallets/:wid/transactions", createTransaction)
 	e.GET("wallets/:wid/transactions/:id", getTransaction)
 
-	// Subscribe to signal to finish interaction
-	finish := make(chan os.Signal, 1)
-	finito := make(chan bool, 1)
-	signal.Notify(finish, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		worker.StartClient(finito)
-	}()
-
-	go func() {
-		<-finish
-		e.Server.Shutdown(context.Background())
-		finito <- true
-	}()
-
 	// Start server
-	e.Logger.Fatal(e.Start(":1323"))
+	go func() {
+		if err := e.Start(":1323"); err != nil && err != http.ErrServerClosed {
+			e.Logger.Fatal("shutting down the server")
+		}
+	}()
+
+	// Gracefully shutdown the server with a timeout of 10 seconds.
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := e.Shutdown(ctx); err != nil {
+		e.Logger.Fatal(err)
+	}
 }
