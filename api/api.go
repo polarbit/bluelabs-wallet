@@ -14,8 +14,8 @@ import (
 
 type (
 	CreateWalletRequest struct {
-		ID     string            `json:"id"`
-		Labels map[string]string `json:"labels"`
+		ExternalID string            `json:"string"`
+		Labels     map[string]string `json:"labels"`
 	}
 
 	CreateWalletResponse struct {
@@ -23,10 +23,10 @@ type (
 	}
 
 	WalletRepresentation struct {
-		ID      string            `json:"id"`
-		Balance float64           `json:"balance"`
-		Labels  map[string]string `json:"labels"`
-		Created time.Time         `json:"created"`
+		ID         int32             `json:"id"`
+		ExternalID string            `json:"string"`
+		Labels     map[string]string `json:"labels"`
+		Created    time.Time         `json:"created"`
 	}
 
 	CreateTransactionRequest struct {
@@ -69,7 +69,7 @@ func createWallet(c echo.Context) error {
 		return err
 	}
 	id := strconv.Itoa(seq)
-	wallets[id] = &WalletRepresentation{ID: id, Labels: req.Labels, Created: time.Now().UTC()}
+	wallets[id] = &WalletRepresentation{ID: 1, Labels: req.Labels, Created: time.Now().UTC()}
 	seq++
 	return c.JSON(http.StatusCreated, CreateWalletResponse{Wallet: *wallets[id]})
 }
@@ -97,9 +97,7 @@ func createTransaction(c echo.Context) error {
 
 	transactions[t.ID] = t
 
-	w := wallets[wid]
-
-	return c.JSON(http.StatusOK, CreateTransactionResponse{Transaction: t, Wallet: w})
+	return c.JSON(http.StatusOK, CreateTransactionResponse{Transaction: t})
 }
 
 func getTransaction(c echo.Context) error {
