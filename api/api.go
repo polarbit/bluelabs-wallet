@@ -14,6 +14,7 @@ import (
 
 type (
 	CreateWalletRequest struct {
+		ID     string            `json:"id"`
 		Labels map[string]string `json:"labels"`
 	}
 
@@ -31,29 +32,31 @@ type (
 	CreateTransactionRequest struct {
 		Amount      float64           `json:"amount"`
 		Description string            `json:"description"`
-		ExternalID  string            `json:"externalId"`
 		Labels      map[string]string `json:"labels"`
+		Fingerprint string            `json:"fingerprint"`
 	}
 
 	CreateTransactionResponse struct {
-		Transaction *TransactionRep       `json:"transaction"`
-		Wallet      *WalletRepresentation `json:"wallet"`
+		Transaction *TransactionRepresentation `json:"transaction"`
 	}
 
-	TransactionRep struct {
+	TransactionRepresentation struct {
 		ID          string            `json:"id"`
+		RefNo       int32             `json:"refNo"`
 		Amount      float64           `json:"amount"`
 		Description string            `json:"description"`
-		ExternalID  string            `json:"externalId"`
 		Labels      map[string]string `json:"labels"`
+		Fingerprint string            `json:"fingerprint"`
 		Created     time.Time         `json:"created"`
+		OldBalance  float64           `json:"oldBalance"`
+		NewBalance  float64           `json:"newBalance"`
 	}
 )
 
 var (
 	wallets      = map[string]*WalletRepresentation{}
 	seq          = 1
-	transactions = map[string]*TransactionRep{}
+	transactions = map[string]*TransactionRepresentation{}
 )
 
 //----------
@@ -83,10 +86,10 @@ func createTransaction(c echo.Context) error {
 		return err
 	}
 
-	t := &TransactionRep{ID: strconv.Itoa(seq),
+	t := &TransactionRepresentation{ID: strconv.Itoa(seq),
 		Amount:      req.Amount,
 		Description: req.Description,
-		ExternalID:  req.ExternalID,
+		Fingerprint: req.Fingerprint,
 		Created:     time.Now().UTC(),
 		Labels:      req.Labels}
 

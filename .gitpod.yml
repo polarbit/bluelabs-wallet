@@ -15,7 +15,6 @@ tasks:
   - name: Install go dependencies
     init: |
       go install github.com/go-delve/delve/cmd/dlv@latest
-      go install github.com/go-delve/delve/cmd/dlv@f95340ae1bf9 
       go install honnef.co/go/tools/cmd/staticcheck@latest
 
 vscode:
