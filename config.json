@@ -1,0 +1,8 @@
+{
+    "Db" : {
+        "Username"  : "postgres",
+        "Password"  : "1234",
+        "Address"   : "localhost:5432",
+        "Database"  : "walletdb"
+    }
+}

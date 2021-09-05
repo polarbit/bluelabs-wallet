@@ -25,3 +25,6 @@ psql> \l
 # List table
 psql> \dt
 select * from pg_catalog.pg_tables where tablename like 'wallet%';
+
+# Changed db name from default to hede
+BL_DB_DATABASE=hede go run . config

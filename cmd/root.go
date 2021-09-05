@@ -5,7 +5,15 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
+
+var dbname string
+
+func init() {
+	rootCmd.PersistentFlags().StringVar(&dbname, "database", "", `Overrides database name in config (db.deneme) or environment variable (BL_DB_DENEME)`)
+	viper.BindPFlag("db.database", rootCmd.PersistentFlags().Lookup("database"))
+}
 
 var rootCmd = &cobra.Command{
 	Use:   "bl-wallet",
@@ -13,7 +21,7 @@ var rootCmd = &cobra.Command{
 	Long: `This is customer wallet management system for the BlueLabs betting platform.
 				  Intended to be used only internal services and apps.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Do Stuff Here
+
 	},
 }
 

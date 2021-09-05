@@ -6,14 +6,15 @@ import (
 )
 
 type Wallet struct {
-	ID          string
-	Labels      map[string]string
-	Fingerprint string
-	Created     time.Time
+	ID         int
+	Labels     map[string]string
+	ExternalID string
+	Created    time.Time
 }
 
 type WalletModel struct {
-	Labels map[string]string
+	Labels     map[string]string
+	ExternalID string
 }
 
 type TransactionModel struct {
