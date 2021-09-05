@@ -3,7 +3,6 @@ module github.com/polarbit/bluelabs-wallet
 go 1.17
 
 require (
-	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/jackc/pgx/v4 v4.13.0
 	github.com/labstack/echo/v4 v4.5.0
 	github.com/spf13/cobra v1.2.1
