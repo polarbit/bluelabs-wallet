@@ -18,6 +18,8 @@ func NewRepository(url string) controller.Repository {
 	return &repository{url: url}
 }
 
+// TODO: Use connection pooling; or add to your notes.
+
 func (r *repository) CreateWallet(ctx context.Context, w *controller.Wallet) error {
 	conn, err := pgx.Connect(context.Background(), r.url)
 	if err != nil {
