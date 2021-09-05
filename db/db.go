@@ -6,35 +6,32 @@ import (
 	"os"
 
 	"github.com/jackc/pgx/v4"
-	"github.com/polarbit/bluelabs-wallet/config"
 )
 
-func getUrl(c *config.DbConfig, omitDbName bool) string {
-	var url string
-	if omitDbName {
-		url = fmt.Sprintf("postgresql://%s:%s@%s", c.Username, c.Password, c.Address)
-	} else {
-		url = fmt.Sprintf("postgresql://%s:%s@%s/%s", c.Username, c.Password, c.Address, c.Database)
-	}
+func parseUrl(url string) *pgx.ConnConfig {
+	config, err := pgx.ParseConfig(url)
 
-	_, err := pgx.ParseConfig(url)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "invalid connection parameters: %v", c)
+		fmt.Fprintf(os.Stderr, "Invalid database url: %v\n", err)
 		os.Exit(1)
 	}
 
-	return url
+	return config
 }
 
-func InitDb(c *config.DbConfig) {
-	conn, err := pgx.Connect(context.Background(), getUrl(c, true))
+func InitDb(url string) {
+	config := parseUrl(url)
+	db := config.Database
+	config.Database = ""
+
+	conn, err := pgx.ConnectConfig(context.Background(), config)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
 	}
 	defer conn.Close(context.Background())
 
-	stmt := fmt.Sprintf("create database %s", c.Database)
+	stmt := fmt.Sprintf("create database %s", db)
 	_, err = conn.Exec(context.Background(), stmt)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
@@ -43,21 +40,22 @@ func InitDb(c *config.DbConfig) {
 
 	fmt.Println("Database is created")
 
-	createSchema(c)
+	createSchema(url)
 }
 
-func DropDb(c *config.DbConfig) {
-	var c2 = *c
-	c2.Database = ""
+func DropDb(url string) {
+	config := parseUrl(url)
+	db := config.Database
+	config.Database = ""
 
-	conn, err := pgx.Connect(context.Background(), getUrl(c, false))
+	conn, err := pgx.ConnectConfig(context.Background(), config)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
 	}
 	defer conn.Close(context.Background())
 
-	stmt := fmt.Sprintf("Drop database %s", c.Database)
+	stmt := fmt.Sprintf("Drop database %s", db)
 	_, err = conn.Exec(context.Background(), stmt)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
@@ -67,8 +65,8 @@ func DropDb(c *config.DbConfig) {
 	fmt.Println("Database is dropped")
 }
 
-func createSchema(c *config.DbConfig) {
-	conn, err := pgx.Connect(context.Background(), getUrl(c, true))
+func createSchema(url string) {
+	conn, err := pgx.Connect(context.Background(), url)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)

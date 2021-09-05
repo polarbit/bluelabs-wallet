@@ -8,14 +8,7 @@ import (
 )
 
 type AppConfig struct {
-	DbConfig DbConfig `mapstructure:"db"`
-}
-
-type DbConfig struct {
-	Address  string `mapstructure:"address"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-	Database string `mapstructure:"database"`
+	Db string `mapstructure:"db"`
 }
 
 func ReadConfig() *AppConfig {
@@ -24,7 +17,6 @@ func ReadConfig() *AppConfig {
 	viper.SetConfigType("json")
 	viper.AddConfigPath(".")
 
-	viper.SetEnvPrefix("BL")
 	viper.AutomaticEnv()
 	replacer := strings.NewReplacer(".", "_")
 	viper.SetEnvKeyReplacer(replacer)

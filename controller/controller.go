@@ -1,4 +1,4 @@
-package wallet
+package controller
 
 import (
 	"context"
@@ -36,24 +36,23 @@ type Transaction struct {
 	NewBalance  float64
 }
 
-type WalletController interface {
+type Controller interface {
 	CreateWallet(ctx context.Context, w *WalletModel) error
 	GetWallet(ctx context.Context, wid string) (*Wallet, error)
 	GetWalletBalance(ctx context.Context, wid string) (float64, error)
 }
 
-type WalletRepository interface {
-	CreateWallet(ctx context.Context, w *WalletModel) error
+type Repository interface {
+	CreateWallet(ctx context.Context, w *Wallet) error
 	GetWallet(ctx context.Context, wid string) (*Wallet, error)
 	GetWalletBalance(ctx context.Context, wid string) (float64, error)
-	SetWalletBalance(ctx context.Context, wid string, amount float64) error
 }
 
 type wc struct {
-	r *WalletRepository
+	r *Repository
 }
 
-func NewWalletController(r *WalletRepository) WalletController {
+func NewWalletController(r *Repository) Controller {
 	return &wc{r: r}
 }
 

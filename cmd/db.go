@@ -27,9 +27,9 @@ var dbCmd = func() *cobra.Command {
 			if initdb && dropdb {
 				return errors.New("only one of --initdb or --dropdb  parameters should be provided")
 			} else if initdb {
-				db.InitDb(&config.DbConfig)
+				db.InitDb(config.Db)
 			} else if dropdb {
-				db.DropDb(&config.DbConfig)
+				db.DropDb(config.Db)
 			} else {
 				return errors.New("either one of --initdb or --dropdb  parameters should be provided")
 			}
