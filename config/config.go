@@ -26,6 +26,7 @@ func ReadConfig() *AppConfig {
 		panic(fmt.Errorf("fatal error config file: %w", err))
 	}
 
+	// TODO: Move this note to README.
 	// Environment variables
 	// Note: Environment variables should be given full upper case
 	viper.AutomaticEnv()
@@ -66,9 +67,7 @@ func findRootDir() string {
 	}
 
 	for i := 0; i < 3; i++ {
-		p := path.Join(dir, "main.go")
-		fmt.Printf("Looking for %v", p)
-		if ok, _ := isFileExists(p); ok {
+		if ok, _ := isFileExists(path.Join(dir, "main.go")); ok {
 			return dir
 		}
 		dir = path.Dir(dir)

@@ -66,7 +66,7 @@ func (r *repository) GetWallet(ctx context.Context, wid int32) (*controller.Wall
 	defer conn.Close(context.Background())
 
 	w := controller.Wallet{}
-	stmt := `select (id, externalid, labels, created) from wallets where id = $1`
+	stmt := `select id, externalid, labels, created from wallets where id = $1`
 	err = conn.QueryRow(ctx, stmt, wid).Scan(&w.ID, &w.ExternalID, &w.Labels, &w.Created)
 	if err != nil {
 		return nil, fmt.Errorf("read wallet failed: %v", err)

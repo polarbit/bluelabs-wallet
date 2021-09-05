@@ -21,3 +21,9 @@ vscode:
   extensions:
     - golang.go
     - zxh404.vscode-proto3
+
+ports:
+  - port: 5050
+    visibility: public
+  - port: 5432
+    visibility: public
