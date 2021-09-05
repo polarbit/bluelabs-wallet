@@ -1,7 +1,11 @@
 package config
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
+	"os"
+	"path"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -13,23 +17,24 @@ type AppConfig struct {
 
 func ReadConfig() *AppConfig {
 
+	// Config file
 	viper.SetConfigName("config")
 	viper.SetConfigType("json")
-	viper.AddConfigPath(".")
+	viper.AddConfigPath(findRootDir())
+	err := viper.ReadInConfig()
+	if err != nil {
+		panic(fmt.Errorf("fatal error config file: %w", err))
+	}
 
+	// Environment variables
+	// Note: Environment variables should be given full upper case
 	viper.AutomaticEnv()
 	replacer := strings.NewReplacer(".", "_")
 	viper.SetEnvKeyReplacer(replacer)
-	// Note: Environment variables should be given full upper case
-
-	err := viper.ReadInConfig()
-	if err != nil {
-		panic(fmt.Errorf("Fatal error config file: %w \n", err))
-	}
 
 	var config AppConfig
 	if err := viper.Unmarshal(&config); err != nil {
-		panic(fmt.Errorf("Fatal error config file: %w \n", err))
+		panic(fmt.Errorf("fatal error config file: %w", err))
 	}
 
 	return &config
@@ -39,4 +44,35 @@ func Dump() {
 	fmt.Println("\nCONFIG")
 	fmt.Println("===========")
 	fmt.Printf("%+v\n", *ReadConfig())
+}
+
+// exists returns whether the given file or directory exists
+func isFileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	}
+	return false, err
+}
+
+// travers up directories until we find a main.go file
+func findRootDir() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		panic(fmt.Errorf("fatal error config file: %w", err))
+	}
+
+	for i := 0; i < 3; i++ {
+		p := path.Join(dir, "main.go")
+		fmt.Printf("Looking for %v", p)
+		if ok, _ := isFileExists(p); ok {
+			return dir
+		}
+		dir = path.Dir(dir)
+	}
+
+	panic(fmt.Errorf("fatal error config file: %w", err))
 }

@@ -3,44 +3,62 @@ package db_test
 import (
 	"context"
 	"flag"
-	"log"
-	"os"
 	"testing"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/polarbit/bluelabs-wallet/config"
+	"github.com/polarbit/bluelabs-wallet/controller"
 	"github.com/polarbit/bluelabs-wallet/db"
-	"github.com/polarbit/bluelabs-wallet/wallet"
 )
 
-var runIt = flag.Bool("it", false, "Run integration test suite")
-var appConfig *config.AppConfig
-var walletRepo wallet.WalletRepository
+var enabled = flag.Bool("integration", false, "run integration tests")
+var c *config.AppConfig
+var r controller.Repository
 
-func TestMain(m *testing.M) {
-
-	appConfig = config.ReadConfig()
-	walletRepo = db.NewRepository(appConfig)
-
-	log.Println("Do stuff BEFORE the tests!")
-	exitVal := m.Run()
-	log.Println("Do stuff AFTER the tests!")
-
-	os.Exit(exitVal)
+type testContext struct {
+	t   *testing.T
+	ctx context.Context
+	w   *controller.Wallet
 }
 
-func TestCreateWalletIt(t *testing.T) {
-	if !*runIt {
-		t.Skip("Skip it in short mode")
+func TestRepositoryIntegration(t *testing.T) {
+	if !*enabled {
+		t.Skip("Skip repository integration tests")
 	}
 
-	ctx := context.Background()
-	model := &wallet.WalletModel{}
-	walletRepo.CreateWallet(ctx, model)
+	c = config.ReadConfig()
+	r = db.NewRepository(c.Db)
+
+	t.Run("CreateWallet", func(t *testing.T) {
+		tc := &testContext{t: t, ctx: context.Background()}
+		testCreateWallet(tc)
+	})
+
+	t.Run("GetWallet", func(t *testing.T) {
+		tc := &testContext{t: t, ctx: context.Background()}
+		testGetWallet(tc)
+	})
 }
 
-func TestGetWalletIt(t *testing.T) {
-	if !*runIt {
-		t.Skip("Skip it in short mode")
+func testCreateWallet(tc *testContext) {
+	tc.w = &controller.Wallet{
+		ExternalID: uuid.NewString(),
+		Labels:     map[string]string{"Source": "IntegrationTest"},
+		Created:    time.Now().UTC().Truncate(time.Microsecond),
 	}
-	log.Println("TestB running")
+	err := r.CreateWallet(tc.ctx, tc.w)
+	if err != nil {
+		tc.t.Errorf("test failed %v", err)
+	}
+}
+
+func testGetWallet(tc *testContext) {
+	w, err := r.GetWallet(tc.ctx, tc.w.ID)
+	if err != nil {
+		tc.t.Errorf("test failed %v", err)
+	}
+	if w == nil {
+		tc.t.Error("returned wallet is nil")
+	}
 }

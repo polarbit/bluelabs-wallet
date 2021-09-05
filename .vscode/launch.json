@@ -9,8 +9,16 @@
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "program": "main.go",
-            "args": ["api"]
+            "program": "${file}",
+            "args": ["--integration"]
+        },
+        {
+            "name": "Run Integraiton Test",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "test",
+            "args": ["./..", "--integration"]
         }
 
     ]
