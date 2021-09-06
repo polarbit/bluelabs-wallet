@@ -104,7 +104,7 @@ func TestCreateTransaction(t *testing.T) {
 		mok.On("GetWallet", mock.Anything, 10).Return((*Wallet)(nil), ErrWalletNotFound)
 		svc := NewWalletService(mok, log.Logger)
 
-		_, err := svc.CreateTransaction(context.Background(), 10, &TransactionModel{})
+		_, err := svc.CreateTransaction(context.Background(), 10, &TransactionModel{Amount: 1.})
 		assert.ErrorIs(t, err, ErrWalletNotFound)
 	})
 

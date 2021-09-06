@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"math"
 	"time"
 
 	"github.com/google/uuid"
@@ -62,6 +63,10 @@ func (s *walletService) GetWalletBalance(ctx context.Context, wid int) (float64,
 
 func (s *walletService) CreateTransaction(ctx context.Context, wid int, m *TransactionModel) (*Transaction, error) {
 	l := s.l.With().Int("wid", wid).Str("fingerprint", m.Fingerprint).Logger()
+
+	if math.Abs(m.Amount) < 1.0 {
+		return nil, errors.New("amount should not be between -1.0 and 1.0")
+	}
 
 	_, err := s.r.GetWallet(ctx, wid)
 	if err != nil {

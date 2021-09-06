@@ -43,7 +43,7 @@ func (h *walletHandler) createWallet(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	return c.JSON(http.StatusCreated, CreateWalletResponse{*w})
+	return c.JSON(http.StatusOK, CreateWalletResponse{*w})
 }
 
 func (h *walletHandler) getWallet(c echo.Context) error {
@@ -112,7 +112,7 @@ func (h *walletHandler) createTransaction(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	return c.JSON(http.StatusCreated, CreateTransactionResponse{*tr})
+	return c.JSON(http.StatusOK, CreateTransactionResponse{*tr})
 }
 
 func (h *walletHandler) getLatestTransaction(c echo.Context) error {
