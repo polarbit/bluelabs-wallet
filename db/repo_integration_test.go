@@ -1,7 +1,7 @@
 //go:build integration
 // +build integration
 
-package db_test
+package db
 
 import (
 	"context"
@@ -10,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/polarbit/bluelabs-wallet/config"
-	"github.com/polarbit/bluelabs-wallet/db"
 	"github.com/polarbit/bluelabs-wallet/service"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,12 +23,8 @@ type testContext struct {
 }
 
 func TestRepositoryIntegration(t *testing.T) {
-	// if !*enabled {
-	// 	t.Skip("Skip repository integration tests")
-	// }
-
 	c = config.ReadConfig()
-	r = db.NewRepository(c.Db)
+	r = NewRepository(c.Db)
 	tc := &testContext{ctx: context.Background()}
 
 	t.Run("CreateWallet", func(t *testing.T) {

@@ -16,32 +16,10 @@ import (
 	"github.com/polarbit/bluelabs-wallet/service"
 )
 
-type (
-	CreateWalletRequest struct {
-		service.WalletModel
-	}
-
-	CreateWalletResponse struct {
-		service.Wallet
-	}
-
-	CreateTransactionRequest struct {
-		service.TransactionModel
-	}
-
-	CreateTransactionResponse struct {
-		service.Transaction
-	}
-
-	GetTransactionResponse struct {
-		service.Transaction
-	}
-)
-
 func StartAPI() {
 	e := echo.New()
 
-	// init vallet handler
+	// init wallet handler
 	h := func() *walletHandler {
 		wc := config.ReadConfig()
 		repo := db.NewRepository(wc.Db)
