@@ -61,7 +61,7 @@ func (h *walletHandler) getWallet(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusNotFound, err.Error())
 		}
 
-		h.l.Debug().Err(err).Msg("route error")
+		h.l.Debug().Err(err).Msg("")
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -115,7 +115,46 @@ func (h *walletHandler) createTransaction(c echo.Context) error {
 	return c.JSON(http.StatusCreated, CreateTransactionResponse{*tr})
 }
 
-func (h *walletHandler) getTransaction(c echo.Context) error {
+func (h *walletHandler) getLatestTransaction(c echo.Context) error {
+	// validate
+	id, err := strconv.Atoi(c.Param("wid"))
+	if err != nil {
+		h.l.Debug().Err(err).Msg("route error")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
 
-	return c.JSON(http.StatusOK, GetTransactionResponse{})
+	// handle
+	tr, err := h.s.GetLatestTransaction(c.Request().Context(), id)
+	if err != nil {
+		if errors.Is(err, service.ErrTransactionNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		}
+
+		h.l.Debug().Err(err).Msg("")
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, GetTransactionResponse{*tr})
+}
+
+func (h *walletHandler) getWalletBalance(c echo.Context) error {
+	// validate
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		h.l.Debug().Err(err).Msg("route error")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	// handle
+	b, err := h.s.GetWalletBalance(c.Request().Context(), id)
+	if err != nil {
+		if errors.Is(err, service.ErrWalletNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		}
+
+		h.l.Debug().Err(err).Msg("")
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, b)
 }

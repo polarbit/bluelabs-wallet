@@ -2,9 +2,11 @@ package api
 
 import (
 	"context"
+	"math"
 	"net/http"
 	"os"
 	"os/signal"
+	"reflect"
 	"time"
 
 	"github.com/go-playground/validator"
@@ -28,17 +30,26 @@ func StartAPI() {
 		return &walletHandler{s: service, v: validate}
 	}()
 
+	// TODO: Push validator and minamount logic to elsewhere
+	h.v.RegisterValidation("minamount", func(fl validator.FieldLevel) bool {
+		if fl.Field().Kind() != reflect.Float32 && fl.Field().Kind() != reflect.Float64 {
+			return false
+		}
+		return math.Abs(fl.Field().Float()) >= 1.0
+	})
+
 	e := echo.New()
 	// e.Logger = lecho.From(log.Logger)                      // Set zerlogger as echo logger
-	e.Validator = &CustomEchoValidator{v: validator.New()} // Set validator
+	e.Validator = &CustomEchoValidator{v: h.v} // Set validator
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
 	// Routes
 	e.POST("/wallets", func(c echo.Context) error { return h.createWallet(c) })
 	e.GET("/wallets/:id", func(c echo.Context) error { return h.getWallet(c) })
+	e.GET("/wallets/:id/balance", func(c echo.Context) error { return h.getWalletBalance(c) })
 	e.POST("/wallets/:wid/transactions", func(c echo.Context) error { return h.createTransaction(c) })
-	e.GET("/wallets/:wid/transactions/:id", func(c echo.Context) error { return h.getTransaction(c) })
+	e.GET("/wallets/:wid/transactions/latest", func(c echo.Context) error { return h.getLatestTransaction(c) })
 
 	// Start server
 	go func() {

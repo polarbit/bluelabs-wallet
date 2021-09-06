@@ -183,3 +183,26 @@ func TestCreateTransaction(t *testing.T) {
 		assert.Nil(t, tr)
 	})
 }
+
+func TestGetLatestTransaction(t *testing.T) {
+	t.Run("TransactionNotFound", func(t *testing.T) {
+		var mok = &mockRepository{}
+		mok.On("GetLatestTransaction", mock.Anything, mock.Anything).Return((*Transaction)(nil), ErrTransactionNotFound)
+		svc := NewWalletService(mok, log.Logger)
+
+		_, err := svc.GetLatestTransaction(context.Background(), 10)
+		assert.ErrorIs(t, err, ErrTransactionNotFound)
+	})
+
+	t.Run("FoundTransaction", func(t *testing.T) {
+		var mok = &mockRepository{}
+		mok.On("GetLatestTransaction", mock.Anything, mock.Anything).Return(
+			&Transaction{RefNo: 1, NewBalance: 99}, nil)
+		svc := NewWalletService(mok, log.Logger)
+
+		tr, err := svc.GetLatestTransaction(context.Background(), 1)
+		assert.NoError(t, err)
+		assert.NotNil(t, tr)
+		assert.Equal(t, 1, tr.RefNo)
+	})
+}

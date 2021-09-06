@@ -14,6 +14,7 @@ type Service interface {
 	GetWallet(ctx context.Context, wid int) (*Wallet, error)
 	GetWalletBalance(ctx context.Context, wid int) (float64, error)
 	CreateTransaction(ctx context.Context, wid int, m *TransactionModel) (*Transaction, error)
+	GetLatestTransaction(ctx context.Context, wid int) (*Transaction, error)
 }
 
 type Repository interface {
@@ -103,5 +104,13 @@ func (s *walletService) CreateTransaction(ctx context.Context, wid int, m *Trans
 		return nil, err
 	}
 
+	return tr, nil
+}
+
+func (s *walletService) GetLatestTransaction(ctx context.Context, wid int) (*Transaction, error) {
+	tr, err := s.r.GetLatestTransaction(ctx, wid)
+	if err != nil {
+		return nil, err
+	}
 	return tr, nil
 }
