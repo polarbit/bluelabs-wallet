@@ -14,10 +14,9 @@ func init() {
 var apiCmd = &cobra.Command{
 	Use:   "api",
 	Short: "REST API for wallet management",
-	Long:  `This is API to manage wallets`,
+	Long:  `This api enables to create wallets and transactions and query wallet and transactions`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Starting API ...")
-
 		api.StartAPI()
+		fmt.Println("wallet api is started")
 	},
 }

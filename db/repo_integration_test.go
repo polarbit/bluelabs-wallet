@@ -1,31 +1,32 @@
+//go:build integration
+// +build integration
+
 package db_test
 
 import (
 	"context"
-	"flag"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/polarbit/bluelabs-wallet/config"
-	"github.com/polarbit/bluelabs-wallet/controller"
 	"github.com/polarbit/bluelabs-wallet/db"
+	"github.com/polarbit/bluelabs-wallet/service"
 	"github.com/stretchr/testify/assert"
 )
 
-var enabled = flag.Bool("integration", false, "run integration tests")
 var c *config.AppConfig
-var r controller.Repository
+var r service.Repository
 
 type testContext struct {
 	ctx context.Context
-	w   *controller.Wallet
+	w   *service.Wallet
 }
 
 func TestRepositoryIntegration(t *testing.T) {
-	if !*enabled {
-		t.Skip("Skip repository integration tests")
-	}
+	// if !*enabled {
+	// 	t.Skip("Skip repository integration tests")
+	// }
 
 	c = config.ReadConfig()
 	r = db.NewRepository(c.Db)
@@ -41,7 +42,7 @@ func TestRepositoryIntegration(t *testing.T) {
 }
 
 func testCreateWallet(tc *testContext, t *testing.T) {
-	tc.w = &controller.Wallet{
+	tc.w = &service.Wallet{
 		ExternalID: uuid.NewString(),
 		Labels:     map[string]string{"Source": "IntegrationTest"},
 		Created:    time.Now().UTC().Truncate(time.Microsecond),
@@ -49,7 +50,7 @@ func testCreateWallet(tc *testContext, t *testing.T) {
 	err := r.CreateWallet(tc.ctx, tc.w)
 
 	assert.Nil(t, err)
-	assert.Greater(t, tc.w.ID, int32(0))
+	assert.Greater(t, tc.w.ID, 0)
 }
 
 func testGetWallet(tc *testContext, t *testing.T) {

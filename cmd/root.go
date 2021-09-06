@@ -7,13 +7,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var dbname string
-
-func init() {
-	// rootCmd.PersistentFlags().StringVar(&dbname, "database", "", `Overrides database name in config (db.deneme) or environment variable (BL_DB_DENEME)`)
-	// viper.BindPFlag("db.database", rootCmd.PersistentFlags().Lookup("database"))
-}
-
 var rootCmd = &cobra.Command{
 	Use:   "bl-wallet",
 	Short: "BlueLabs wallet management system",

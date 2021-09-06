@@ -2,134 +2,69 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"time"
 
+	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/gommon/log"
+	"github.com/polarbit/bluelabs-wallet/config"
+	"github.com/polarbit/bluelabs-wallet/db"
+	"github.com/polarbit/bluelabs-wallet/service"
 )
 
 type (
 	CreateWalletRequest struct {
-		ExternalID string            `json:"string"`
-		Labels     map[string]string `json:"labels"`
+		service.WalletModel
 	}
 
 	CreateWalletResponse struct {
-		Wallet WalletRepresentation `json:"wallet"`
-	}
-
-	WalletRepresentation struct {
-		ID         int32             `json:"id"`
-		ExternalID string            `json:"string"`
-		Labels     map[string]string `json:"labels"`
-		Created    time.Time         `json:"created"`
+		service.Wallet
 	}
 
 	CreateTransactionRequest struct {
-		Amount      float64           `json:"amount"`
-		Description string            `json:"description"`
-		Labels      map[string]string `json:"labels"`
-		Fingerprint string            `json:"fingerprint"`
+		service.TransactionModel
 	}
 
 	CreateTransactionResponse struct {
-		Transaction *TransactionRepresentation `json:"transaction"`
+		service.Transaction
 	}
 
-	TransactionRepresentation struct {
-		ID          string            `json:"id"`
-		RefNo       int32             `json:"refNo"`
-		Amount      float64           `json:"amount"`
-		Description string            `json:"description"`
-		Labels      map[string]string `json:"labels"`
-		Fingerprint string            `json:"fingerprint"`
-		Created     time.Time         `json:"created"`
-		OldBalance  float64           `json:"oldBalance"`
-		NewBalance  float64           `json:"newBalance"`
+	GetTransactionResponse struct {
+		service.Transaction
 	}
 )
-
-var (
-	wallets      = map[string]*WalletRepresentation{}
-	seq          = 1
-	transactions = map[string]*TransactionRepresentation{}
-)
-
-//----------
-// Handlers
-//----------
-
-func createWallet(c echo.Context) error {
-	req := &CreateWalletRequest{}
-	if err := c.Bind(req); err != nil {
-		return err
-	}
-	id := strconv.Itoa(seq)
-	wallets[id] = &WalletRepresentation{ID: 1, Labels: req.Labels, Created: time.Now().UTC()}
-	seq++
-	return c.JSON(http.StatusCreated, CreateWalletResponse{Wallet: *wallets[id]})
-}
-
-func getWallet(c echo.Context) error {
-	id := c.Param("id")
-	return c.JSON(http.StatusOK, wallets[id])
-}
-
-func createTransaction(c echo.Context) error {
-	wid := c.Param("wid")
-	req := &CreateTransactionRequest{}
-	if err := c.Bind(req); err != nil {
-		return err
-	}
-
-	t := &TransactionRepresentation{ID: strconv.Itoa(seq),
-		Amount:      req.Amount,
-		Description: req.Description,
-		Fingerprint: req.Fingerprint,
-		Created:     time.Now().UTC(),
-		Labels:      req.Labels}
-
-	t.Labels["WID"] = wid
-
-	transactions[t.ID] = t
-
-	return c.JSON(http.StatusOK, CreateTransactionResponse{Transaction: t})
-}
-
-func getTransaction(c echo.Context) error {
-	wid := c.Param("wid")
-	id := c.Param("id")
-
-	t := transactions[id]
-
-	if t == nil {
-		return c.String(http.StatusNotFound, "")
-	}
-
-	if t.Labels["WID"] != wid {
-		return c.String(http.StatusBadRequest, "")
-	}
-
-	return c.JSON(http.StatusOK, t)
-}
 
 func StartAPI() {
 	e := echo.New()
+
+	// init vallet handler
+	h := func() *walletHandler {
+		wc := config.ReadConfig()
+		repo := db.NewRepository(wc.Db)
+		service := service.NewWalletService(repo)
+		validate := validator.New()
+		return &walletHandler{s: service, v: validate}
+	}()
+
+	// Set validator
+	e.Logger.SetLevel(log.DEBUG)
+	e.Validator = &CustomEchoValidator{v: h.v}
 
 	// Middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
 	// Routes
-	e.POST("/wallets", createWallet)
-	e.GET("/wallets/:id", getWallet)
-
-	e.POST("wallets/:wid/transactions", createTransaction)
-	e.GET("wallets/:wid/transactions/:id", getTransaction)
+	e.POST("/wallets", func(c echo.Context) error { return h.createWallet(c) })
+	e.GET("/wallets/:id", func(c echo.Context) error { return h.getWallet(c) })
+	e.POST("/wallets/:wid/transactions", func(c echo.Context) error { return h.createTransaction(c) })
+	e.GET("/wallets/:wid/transactions/:id", func(c echo.Context) error { return h.getTransaction(c) })
 
 	// Start server
 	go func() {
@@ -147,4 +82,70 @@ func StartAPI() {
 	if err := e.Shutdown(ctx); err != nil {
 		e.Logger.Fatal(err)
 	}
+}
+
+type walletHandler struct {
+	s service.Service
+	v *validator.Validate
+}
+
+func (h *walletHandler) createWallet(c echo.Context) error {
+	req := &CreateWalletRequest{}
+
+	// bind
+	if err := c.Bind(req); err != nil {
+		c.Logger().Debug("bind: ", err)
+		return c.String(http.StatusBadRequest, err.Error())
+	}
+
+	// validate
+	if err := c.Validate(req); err != nil {
+		c.Logger().Debug("validate: ", err)
+		return c.String(http.StatusBadRequest, err.Error())
+	}
+
+	// handle
+	w, err := h.s.CreateWallet(c.Request().Context(), &req.WalletModel)
+	if err != nil {
+		if errors.Is(err, service.ErrWalletAlreadyExists) {
+			return c.String(http.StatusConflict, err.Error())
+		}
+
+		c.Logger().Debug("handle: ", err)
+		return c.String(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusCreated, CreateWalletResponse{*w})
+}
+
+func (h *walletHandler) getWallet(c echo.Context) error {
+	// validate
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Logger().Debug("route: ", err)
+		return c.String(http.StatusBadRequest, err.Error())
+	}
+
+	// handle
+	w, err := h.s.GetWallet(c.Request().Context(), id)
+	if err != nil {
+		if errors.Is(err, service.ErrWalletNotFound) {
+			return c.String(http.StatusNotFound, err.Error())
+		}
+
+		c.Logger().Debug("handle: ", err)
+		return c.String(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, CreateWalletResponse{*w})
+}
+
+func (h *walletHandler) createTransaction(c echo.Context) error {
+
+	return c.JSON(http.StatusOK, CreateTransactionResponse{})
+}
+
+func (h *walletHandler) getTransaction(c echo.Context) error {
+
+	return c.JSON(http.StatusOK, GetTransactionResponse{})
 }

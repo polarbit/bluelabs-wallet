@@ -4,7 +4,8 @@
 
 
 ### References
-- [Echo Graceful Shutdown](https://echo.labstack.com/cookbook/graceful-shutdown/)
+- [Echo graceful shutdown](https://echo.labstack.com/cookbook/graceful-shutdown/)
+- [Seperate tests using build tags](https://mickey.dev/posts/go-build-tags-testing/)
 
 
 
@@ -30,7 +31,8 @@ select * from pg_catalog.pg_tables where tablename like 'wallet%';
 DB_DATABASE=hede go run . config
 
 # Run integration tests
-go test ./... --integration -v 
+go test ./...  -v -tags integration
+# if integration tests run; unit tests will not run (using build tags)
 
 
 ### TODO
