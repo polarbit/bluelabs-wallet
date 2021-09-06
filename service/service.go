@@ -2,8 +2,10 @@ package service
 
 import (
 	"context"
+	"errors"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 )
 
@@ -58,17 +60,48 @@ func (s *walletService) GetWalletBalance(ctx context.Context, wid int) (float64,
 }
 
 func (s *walletService) CreateTransaction(ctx context.Context, wid int, m *TransactionModel) (*Transaction, error) {
-	w, err := s.r.GetWallet(ctx, wid)
+	l := s.l.With().Int("wid", wid).Str("fingerprint", m.Fingerprint).Logger()
+
+	_, err := s.r.GetWallet(ctx, wid)
 	if err != nil {
-		s.l.Info().Int("wid", wid).Err(err).Send()
+		l.Info().Err(err).Send()
 		return nil, err
-	}
-	if w == nil {
-		s.l.Error().Int("wid", wid).Msg("unexpected situation, no error no wallet")
-		panic("unexpected situation")
 	}
 
 	lt, err := s.r.GetLatestTransaction(ctx, wid)
+	if err != nil && !errors.Is(err, ErrTransactionNotFound) {
+		l.Info().Err(err).Send()
+		return nil, err
+	}
 
-	return lt, nil
+	tr := &Transaction{
+		ID:          uuid.NewString(),
+		Amount:      m.Amount,
+		Description: m.Description,
+		Labels:      m.Labels,
+		Fingerprint: m.Fingerprint,
+		Created:     time.Now().UTC().Truncate(time.Millisecond),
+	}
+
+	if lt == nil {
+		tr.OldBalance = 0.
+		tr.NewBalance = tr.Amount
+		tr.RefNo = 1
+	} else {
+		tr.OldBalance = lt.NewBalance
+		tr.NewBalance = lt.NewBalance + tr.Amount
+		tr.RefNo = lt.RefNo + 1
+	}
+
+	if tr.NewBalance < 0. {
+		return nil, ErrNotEnoughWalletBalance
+	}
+
+	err = s.r.CreateTransaction(ctx, wid, tr)
+	if err != nil {
+		l.Info().Err(err).Send()
+		return nil, err
+	}
+
+	return tr, nil
 }

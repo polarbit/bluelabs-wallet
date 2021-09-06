@@ -7,35 +7,25 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-var mok = &mockRepository{}
-var svc Service
-
 func TestMain(m *testing.M) {
-	mok.On("GetWallet", mock.Anything, 10).Return(&Wallet{ID: 10}, nil)
-	mok.On("GetWallet", mock.Anything, 11).Return((*Wallet)(nil), ErrWalletNotFound)
-
-	mok.On("CreateWallet", mock.Anything,
-		mock.MatchedBy(func(w *Wallet) bool { w.ID = 99; return w.ExternalID == "99" })).
-		Return(nil)
-	mok.On("CreateWallet", mock.Anything,
-		mock.MatchedBy(func(w *Wallet) bool { return w.ExternalID == "100" })).
-		Return(ErrWalletAlreadyExists)
-
-	logger := log.Logger
-	svc = NewWalletService(mok, logger)
-
 	exitcode := m.Run()
 	os.Exit(exitcode)
 }
 
 func TestGetWallet(t *testing.T) {
 	t.Run("WalletFound", func(t *testing.T) {
+		var mok = &mockRepository{}
+		mok.On("GetWallet", mock.Anything, 10).Return(&Wallet{ID: 10}, nil)
+		svc := NewWalletService(mok, log.Logger)
+
 		w, err := svc.GetWallet(context.Background(), 10)
 		assert.NoError(t, err)
 		assert.NotNil(t, w)
@@ -43,6 +33,10 @@ func TestGetWallet(t *testing.T) {
 	})
 
 	t.Run("WalletNotFound", func(t *testing.T) {
+		var mok = &mockRepository{}
+		mok.On("GetWallet", mock.Anything, 11).Return((*Wallet)(nil), ErrWalletNotFound)
+		svc := NewWalletService(mok, log.Logger)
+
 		w, err := svc.GetWallet(context.Background(), 11)
 		assert.Nil(t, w)
 		assert.Error(t, err)
@@ -52,6 +46,12 @@ func TestGetWallet(t *testing.T) {
 
 func TestCreateWallet(t *testing.T) {
 	t.Run("WalletCreated", func(t *testing.T) {
+		var mok = &mockRepository{}
+		mok.On("CreateWallet", mock.Anything,
+			mock.MatchedBy(func(w *Wallet) bool { w.ID = 99; return w.ExternalID == "99" })).
+			Return(nil)
+		svc := NewWalletService(mok, log.Logger)
+
 		w, err := svc.CreateWallet(context.Background(), &WalletModel{
 			ExternalID: "99",
 		})
@@ -62,10 +62,124 @@ func TestCreateWallet(t *testing.T) {
 	})
 
 	t.Run("WalletAlreadyExists", func(t *testing.T) {
+		var mok = &mockRepository{}
+		mok.On("CreateWallet", mock.Anything,
+			mock.MatchedBy(func(w *Wallet) bool { return w.ExternalID == "100" })).
+			Return(ErrWalletAlreadyExists)
+		svc := NewWalletService(mok, log.Logger)
+
 		w, err := svc.CreateWallet(context.Background(), &WalletModel{
 			ExternalID: "100",
 		})
 		assert.ErrorIs(t, err, ErrWalletAlreadyExists)
 		assert.Nil(t, w)
+	})
+}
+
+func TestGetWalletBalance(t *testing.T) {
+	t.Run("WalletNotFound", func(t *testing.T) {
+		var mok = &mockRepository{}
+		mok.On("GetWalletBalance", mock.Anything, mock.Anything).Return(0., ErrWalletNotFound)
+		svc := NewWalletService(mok, log.Logger)
+
+		b, err := svc.GetWalletBalance(context.Background(), 10)
+		assert.ErrorIs(t, err, ErrWalletNotFound)
+		assert.Equal(t, 0., b)
+	})
+
+	t.Run("ReturnSomeBalance", func(t *testing.T) {
+		var mok = &mockRepository{}
+		mok.On("GetWalletBalance", mock.Anything, mock.Anything).Return(99., nil)
+		svc := NewWalletService(mok, log.Logger)
+
+		b, err := svc.GetWalletBalance(context.Background(), 10)
+		assert.NoError(t, err)
+		assert.Equal(t, 99., b)
+	})
+}
+
+func TestCreateTransaction(t *testing.T) {
+	t.Run("WalletNotExists", func(t *testing.T) {
+		var mok = &mockRepository{}
+		mok.On("GetWallet", mock.Anything, 10).Return((*Wallet)(nil), ErrWalletNotFound)
+		svc := NewWalletService(mok, log.Logger)
+
+		_, err := svc.CreateTransaction(context.Background(), 10, &TransactionModel{})
+		assert.ErrorIs(t, err, ErrWalletNotFound)
+	})
+
+	t.Run("FirstTransaction", func(t *testing.T) {
+		var mok = &mockRepository{}
+		mok.On("GetWallet", mock.Anything, 10).Return(&Wallet{}, nil)
+		mok.On("GetLatestTransaction", mock.Anything, 10).Return((*Transaction)(nil), nil)
+		mok.On("CreateTransaction", mock.Anything, 10, mock.Anything).Return(nil)
+		svc := NewWalletService(mok, log.Logger)
+
+		m := &TransactionModel{Amount: 25, Description: "desc",
+			Fingerprint: uuid.NewString(), Labels: map[string]string{}}
+
+		tr, err := svc.CreateTransaction(context.Background(), 10, m)
+		assert.NoError(t, err)
+		assert.NotNil(t, tr)
+		assert.NotEmpty(t, tr.ID)
+		assert.Equal(t, 1, tr.RefNo)
+		assert.Equal(t, m.Amount, tr.Amount)
+		assert.Equal(t, 0., tr.OldBalance)
+		assert.Equal(t, 25., tr.NewBalance)
+		assert.Equal(t, m.Fingerprint, tr.Fingerprint)
+		assert.Equal(t, m.Description, tr.Description)
+		assert.Equal(t, m.Labels, tr.Labels)
+		assert.Greater(t, tr.Created.UnixMilli(), time.Now().Add(-3*time.Second).UnixMilli())
+	})
+
+	t.Run("SecondTransaction", func(t *testing.T) {
+		var mok = &mockRepository{}
+		mok.On("GetWallet", mock.Anything, 10).Return(&Wallet{}, nil)
+		mok.On("GetLatestTransaction", mock.Anything, mock.Anything).Return(
+			&Transaction{RefNo: 1, NewBalance: 99}, nil)
+		mok.On("CreateTransaction", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		svc := NewWalletService(mok, log.Logger)
+
+		m := &TransactionModel{Amount: -25.}
+
+		tr, err := svc.CreateTransaction(context.Background(), 10, m)
+		assert.NoError(t, err)
+		assert.NotNil(t, tr)
+		assert.NotEmpty(t, tr.ID)
+		assert.Equal(t, 2, tr.RefNo)
+		assert.Equal(t, m.Amount, tr.Amount)
+		assert.Equal(t, 99., tr.OldBalance)
+		assert.Equal(t, 99.+m.Amount, tr.NewBalance)
+	})
+
+	t.Run("NotEnoughBalance", func(t *testing.T) {
+		var mok = &mockRepository{}
+		mok.On("GetWallet", mock.Anything, 10).Return(&Wallet{}, nil)
+		mok.On("GetLatestTransaction", mock.Anything, mock.Anything).Return(
+			&Transaction{RefNo: 1, NewBalance: 1}, nil)
+		mok.On("CreateTransaction", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		svc := NewWalletService(mok, log.Logger)
+
+		m := &TransactionModel{Amount: -2}
+
+		tr, err := svc.CreateTransaction(context.Background(), 10, m)
+		assert.ErrorIs(t, err, ErrNotEnoughWalletBalance)
+		assert.Nil(t, tr)
+	})
+
+	t.Run("ConsistencyError", func(t *testing.T) {
+		var mok = &mockRepository{}
+		mok.On("GetWallet", mock.Anything, 10).Return(&Wallet{}, nil)
+		mok.On("GetLatestTransaction", mock.Anything, mock.Anything).Return(
+			&Transaction{RefNo: 1, NewBalance: 99.}, nil)
+		mok.On("CreateTransaction", mock.Anything, mock.Anything, mock.Anything).
+			Return(ErrTransactionConsistency)
+		svc := NewWalletService(mok, log.Logger)
+
+		m := &TransactionModel{Amount: -2}
+
+		tr, err := svc.CreateTransaction(context.Background(), 10, m)
+		assert.ErrorIs(t, err, ErrTransactionConsistency)
+		assert.Nil(t, tr)
 	})
 }

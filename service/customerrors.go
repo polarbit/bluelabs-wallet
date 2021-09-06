@@ -15,6 +15,7 @@ var (
 	ErrTransactionAlreadyExistsByRefNo       = &ServiceError{Msg: "a transaction already exists with same refno"}
 	ErrTransactionAlreadyExistsByFingerprint = &ServiceError{Msg: "a transaction already exists with same fingerprint"}
 	ErrTransactionNotFound                   = &ServiceError{Msg: "transaction not found"}
+	ErrNotEnoughWalletBalance                = &ServiceError{Msg: "wallet balance is not enough"}
 )
 
 func (e *ServiceError) Error() string {

@@ -16,7 +16,7 @@ type (
 	}
 
 	TransactionModel struct {
-		Amount      float64           `json:"amount" validate:"required,min=0.1"`
+		Amount      float64           `json:"amount" validate:"required,min=1.0"`
 		Description string            `json:"description" validate:"required,max=100"`
 		Labels      map[string]string `json:"labels" validate:"max=10"`
 		Fingerprint string            `json:"externalId" validate:"required,max=50"`
