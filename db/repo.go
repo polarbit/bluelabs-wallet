@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	errPhraseWalletAlreadyExists = `duplicate key value violates unique constraint "wallets_externalid_key"`
+	errTextWalletAlreadyExists = `duplicate key value violates unique constraint "wallets_externalid_key"`
+	errTextRowNotFound         = `no rows in result set`
 )
 
 type repository struct {
@@ -48,7 +49,7 @@ func (r *repository) CreateWallet(ctx context.Context, w *service.Wallet) error 
 	err = tx.QueryRow(ctx, stmt, w.ExternalID, w.Labels, w.Created).Scan(&w.ID)
 	if err != nil {
 		tx.Rollback(ctx)
-		if strings.Contains(err.Error(), errPhraseWalletAlreadyExists) {
+		if strings.Contains(err.Error(), errTextWalletAlreadyExists) {
 			return service.ErrWalletAlreadyExists
 		}
 		return fmt.Errorf("insert wallet failed: %v", err)
@@ -96,7 +97,7 @@ func (r *repository) GetWallet(ctx context.Context, wid int) (*service.Wallet, e
 	return &w, nil
 }
 
-func (r *repository) GetWalletBalance(ctx context.Context, wid string) (b float64, err error) {
+func (r *repository) GetWalletBalance(ctx context.Context, wid int) (b float64, err error) {
 	conn, err := pgx.Connect(context.Background(), r.url)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
@@ -104,9 +105,12 @@ func (r *repository) GetWalletBalance(ctx context.Context, wid string) (b float6
 	}
 	defer conn.Close(context.Background())
 
-	stmt := `select (id, externalid, labels, created) from wallets where id = $1`
+	stmt := `select amount from wallet_balances where wid = $1`
 	err = conn.QueryRow(ctx, stmt, wid).Scan(&b)
 	if err != nil {
+		if strings.Contains(err.Error(), errTextRowNotFound) {
+			return 0., service.ErrWalletNotFound
+		}
 		return 0., fmt.Errorf("read wallet balance failed: %v", err)
 	}
 

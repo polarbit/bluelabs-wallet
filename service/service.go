@@ -15,7 +15,7 @@ type Service interface {
 type Repository interface {
 	CreateWallet(ctx context.Context, w *Wallet) error
 	GetWallet(ctx context.Context, wid int) (*Wallet, error)
-	GetWalletBalance(ctx context.Context, wid string) (float64, error)
+	GetWalletBalance(ctx context.Context, wid int) (float64, error)
 }
 
 var (

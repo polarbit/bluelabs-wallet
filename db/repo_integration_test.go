@@ -5,6 +5,7 @@ package db
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -34,6 +35,14 @@ func TestRepositoryIntegration(t *testing.T) {
 	t.Run("GetWallet", func(t *testing.T) {
 		testGetWallet(tc, t)
 	})
+
+	t.Run("GetWalletBalance", func(t *testing.T) {
+		testGetWalletBalance(tc, t)
+	})
+
+	t.Run("GetWalletBalanceReturnsNotFound", func(t *testing.T) {
+		testGetWalletBalanceReturnsNotFound(tc, t)
+	})
 }
 
 func testCreateWallet(tc *testContext, t *testing.T) {
@@ -57,4 +66,16 @@ func testGetWallet(tc *testContext, t *testing.T) {
 	assert.Equal(t, tc.w.Created, w.Created)
 	assert.Contains(t, w.Labels, "Source")
 	assert.Equal(t, tc.w.Labels["Source"], w.Labels["Source"])
+}
+
+func testGetWalletBalance(tc *testContext, t *testing.T) {
+	b, err := r.GetWalletBalance(tc.ctx, tc.w.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, 0., b)
+}
+
+func testGetWalletBalanceReturnsNotFound(tc *testContext, t *testing.T) {
+	_, err := r.GetWalletBalance(tc.ctx, -1)
+	assert.NotNil(t, err)
+	assert.True(t, errors.Is(err, service.ErrWalletNotFound))
 }

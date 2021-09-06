@@ -23,7 +23,7 @@ func (m *mockRepository) GetWallet(ctx context.Context, wid int) (*Wallet, error
 	return args.Get(0).(*Wallet), args.Error(1)
 }
 
-func (m *mockRepository) GetWalletBalance(ctx context.Context, wid string) (b float64, err error) {
+func (m *mockRepository) GetWalletBalance(ctx context.Context, wid int) (b float64, err error) {
 
 	args := m.Called(ctx, wid)
 	return args.Get(0).(float64), args.Error(1)
