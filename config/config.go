@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
 
@@ -13,9 +14,14 @@ type AppConfig struct {
 	LogLevel string `mapstructure:"loglevel"`
 }
 
-func ReadConfig() *AppConfig {
+var Config *AppConfig
 
-	// Config file
+func Init() {
+	initConfig()
+	initLogger()
+}
+
+func initConfig() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("json")
 	viper.AddConfigPath(findRootDir())
@@ -40,11 +46,21 @@ func ReadConfig() *AppConfig {
 		panic(fmt.Errorf("loglevel is incorrect, valid values are: panic, fatal, error, warning, debug, trace. err:%v", err))
 	}
 
-	return &config
+	Config = &config
+}
+
+func initLogger() {
+	if level, err := zerolog.ParseLevel(Config.LogLevel); err != nil {
+		panic("invalid log level in config:" + Config.LogLevel)
+	} else {
+		zerolog.SetGlobalLevel(level)
+	}
+
+	log.Logger.With().Logger()
 }
 
 func Dump() {
 	fmt.Println("\nCONFIG")
 	fmt.Println("===========")
-	fmt.Printf("%+v\n", *ReadConfig())
+	fmt.Printf("%+v\n", *Config)
 }

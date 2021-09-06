@@ -8,11 +8,13 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/polarbit/bluelabs-wallet/service"
+	"github.com/rs/zerolog"
 )
 
 type walletHandler struct {
 	s service.Service
 	v *validator.Validate
+	l zerolog.Logger
 }
 
 func (h *walletHandler) createWallet(c echo.Context) error {
@@ -20,13 +22,13 @@ func (h *walletHandler) createWallet(c echo.Context) error {
 
 	// bind
 	if err := c.Bind(req); err != nil {
-		c.Logger().Debug("bind: ", err)
+		h.l.Debug().Err(err).Msg("bind error")
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	// validate
 	if err := c.Validate(req); err != nil {
-		c.Logger().Debug("validate: ", err)
+		h.l.Debug().Err(err).Msg("validate error")
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -37,7 +39,7 @@ func (h *walletHandler) createWallet(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusConflict, err.Error())
 		}
 
-		c.Logger().Debug("handle: ", err)
+		h.l.Debug().Err(err).Msg("")
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -48,7 +50,7 @@ func (h *walletHandler) getWallet(c echo.Context) error {
 	// validate
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.Logger().Debug("route: ", err)
+		h.l.Debug().Err(err).Msg("route error")
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -59,7 +61,7 @@ func (h *walletHandler) getWallet(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusNotFound, err.Error())
 		}
 
-		c.Logger().Debug("handle: ", err)
+		h.l.Debug().Err(err).Msg("route error")
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -67,8 +69,50 @@ func (h *walletHandler) getWallet(c echo.Context) error {
 }
 
 func (h *walletHandler) createTransaction(c echo.Context) error {
+	// route
+	wid, err := strconv.Atoi(c.Param("wid"))
+	if err != nil {
+		h.l.Debug().Err(err).Msg("route error")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
 
-	return c.JSON(http.StatusOK, CreateTransactionResponse{})
+	// bind
+	req := &CreateTransactionRequest{}
+	if err := c.Bind(req); err != nil {
+		h.l.Debug().Err(err).Msg("bind error")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	// validate
+	if err := c.Validate(req); err != nil {
+		h.l.Debug().Err(err).Msg("validate error")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	// handle
+	tr, err := h.s.CreateTransaction(c.Request().Context(), wid, &req.TransactionModel)
+	if err != nil {
+		if errors.Is(err, service.ErrWalletNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		}
+		if errors.Is(err, service.ErrNotEnoughWalletBalance) {
+			return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+		}
+		if errors.Is(err, service.ErrTransactionAlreadyExistsByFingerprint) {
+			return echo.NewHTTPError(http.StatusConflict, err.Error())
+		}
+		if errors.Is(err, service.ErrTransactionAlreadyExistsByRefNo) {
+			return echo.NewHTTPError(http.StatusConflict, err.Error())
+		}
+		if errors.Is(err, service.ErrTransactionConsistency) {
+			return echo.NewHTTPError(http.StatusConflict, err.Error())
+		}
+
+		h.l.Debug().Err(err).Msg("")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusCreated, CreateTransactionResponse{*tr})
 }
 
 func (h *walletHandler) getTransaction(c echo.Context) error {

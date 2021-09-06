@@ -5,19 +5,16 @@ package db
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/polarbit/bluelabs-wallet/config"
 	"github.com/polarbit/bluelabs-wallet/service"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 )
 
-var c *config.AppConfig
 var r service.Repository
 
 type testContext struct {
@@ -27,17 +24,8 @@ type testContext struct {
 }
 
 func TestRepositoryIntegration(t *testing.T) {
-	c = config.ReadConfig()
-
-	var logger zerolog.Logger
-	if level, err := zerolog.ParseLevel(c.LogLevel); err != nil {
-		fmt.Printf("level %v\n", level)
-		logger = log.Logger.Level(zerolog.DebugLevel)
-	} else {
-		logger = log.Logger.Level(level)
-	}
-
-	r = NewRepository(c.Db, logger)
+	config.Init()
+	r = NewRepository(config.Config.Db, log.Logger)
 	tc := &testContext{ctx: context.Background()}
 
 	t.Run("CreateWalletOk", func(t *testing.T) {
@@ -77,7 +65,7 @@ func TestRepositoryIntegration(t *testing.T) {
 	})
 
 	t.Run("GetLatestTransactionOk", func(t *testing.T) {
-		testGetWalletBalanceOk(tc, t)
+		testGetLatestTransactionOk(tc, t)
 	})
 }
 

@@ -10,29 +10,27 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/rs/zerolog/log"
 	"github.com/ziflex/lecho/v2"
 
 	"github.com/polarbit/bluelabs-wallet/config"
 	"github.com/polarbit/bluelabs-wallet/db"
 	"github.com/polarbit/bluelabs-wallet/service"
-	"github.com/rs/zerolog/log"
 )
 
 func StartAPI() {
-
-	logger := log.Logger
+	config.Init()
 
 	// init wallet handler
 	h := func() *walletHandler {
-		wc := config.ReadConfig()
-		repo := db.NewRepository(wc.Db, logger)
-		service := service.NewWalletService(repo, logger)
+		repo := db.NewRepository(config.Config.Db, log.Logger)
+		service := service.NewWalletService(repo, log.Logger)
 		validate := validator.New()
 		return &walletHandler{s: service, v: validate}
 	}()
 
 	e := echo.New()
-	e.Logger = lecho.From(logger)                          // Set zerlogger as echo logger
+	e.Logger = lecho.From(log.Logger)                      // Set zerlogger as echo logger
 	e.Validator = &CustomEchoValidator{v: validator.New()} // Set validator
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())

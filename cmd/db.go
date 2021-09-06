@@ -21,15 +21,14 @@ var dbCmd = func() *cobra.Command {
 		Short: "Initializes or drops wallet database. See help for parameters.",
 		Long:  `See bl-wallet db --help`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-
-			config := config.ReadConfig()
+			config.Init()
 
 			if initdb && dropdb {
 				return errors.New("only one of --initdb or --dropdb  parameters should be provided")
 			} else if initdb {
-				db.InitDb(config.Db)
+				db.InitDb(config.Config.Db)
 			} else if dropdb {
-				db.DropDb(config.Db)
+				db.DropDb(config.Config.Db)
 			} else {
 				return errors.New("either one of --initdb or --dropdb  parameters should be provided")
 			}

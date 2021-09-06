@@ -14,6 +14,7 @@ var configCmd = &cobra.Command{
 	Short: "Dumps current application configuration",
 	Long:  "",
 	Run: func(cmd *cobra.Command, args []string) {
+		config.Init()
 		config.Dump()
 	},
 }

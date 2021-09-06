@@ -39,3 +39,10 @@ Note: if integration tests run; unit tests will not run (using build tags)
 - Repo: Other fields can be tested for min-max length, existance etc.
 - custom error and check against custom error
 - run validation also in service
+
+
+
+- repo | service => getTransaction yazalım
+- service => get-latest
+- api => get-balance
+- api => *
