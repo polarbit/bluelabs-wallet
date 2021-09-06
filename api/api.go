@@ -11,7 +11,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog/log"
-	"github.com/ziflex/lecho/v2"
 
 	"github.com/polarbit/bluelabs-wallet/config"
 	"github.com/polarbit/bluelabs-wallet/db"
@@ -30,7 +29,7 @@ func StartAPI() {
 	}()
 
 	e := echo.New()
-	e.Logger = lecho.From(log.Logger)                      // Set zerlogger as echo logger
+	// e.Logger = lecho.From(log.Logger)                      // Set zerlogger as echo logger
 	e.Validator = &CustomEchoValidator{v: validator.New()} // Set validator
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
