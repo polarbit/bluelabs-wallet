@@ -5,7 +5,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"os"
 	"testing"
 
@@ -46,8 +45,8 @@ func TestGetWallet(t *testing.T) {
 	t.Run("WalletNotFound", func(t *testing.T) {
 		w, err := svc.GetWallet(context.Background(), 11)
 		assert.Nil(t, w)
-		assert.NoError(t, err)
-		assert.True(t, errors.Is(err, ErrWalletNotFound))
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrWalletNotFound)
 	})
 }
 

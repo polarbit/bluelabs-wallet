@@ -11,26 +11,26 @@ type (
 	}
 
 	WalletModel struct {
-		Labels     map[string]string `json:"labels" validate:"max=1"`
+		Labels     map[string]string `json:"labels" validate:"max=10"`
 		ExternalID string            `json:"externalId" validate:"required,max=50"`
 	}
 
 	TransactionModel struct {
-		Amount      float64
-		Description string
-		Labels      map[string]string
-		Fingerprint string
+		Amount      float64           `json:"amount" validate:"required,min=0.1"`
+		Description string            `json:"description" validate:"required,max=100"`
+		Labels      map[string]string `json:"labels" validate:"max=10"`
+		Fingerprint string            `json:"externalId" validate:"required,max=50"`
 	}
 
 	Transaction struct {
-		ID          string
-		RefNo       int
-		Amount      float64
-		Description string
-		Labels      map[string]string
-		Fingerprint string
-		Created     time.Time
-		OldBalance  float64
-		NewBalance  float64
+		ID          string            `json:"id"`
+		RefNo       int               `json:"refno"`
+		Amount      float64           `json:"amount"`
+		Description string            `json:"description"`
+		Labels      map[string]string `json:"labels"`
+		Fingerprint string            `json:"fingerprint"`
+		Created     time.Time         `json:"created"`
+		OldBalance  float64           `json:"oldbalance"`
+		NewBalance  float64           `json:"newbalance"`
 	}
 )

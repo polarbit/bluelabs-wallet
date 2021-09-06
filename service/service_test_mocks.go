@@ -33,3 +33,8 @@ func (m *mockRepository) CreateTransaction(ctx context.Context, wid int, t *Tran
 	args := m.Called(ctx, wid, t)
 	return args.Error(0)
 }
+
+func (m *mockRepository) GetLatestTransaction(ctx context.Context, wid int) (*Transaction, error) {
+	args := m.Called(ctx, wid)
+	return args.Get(0).(*Transaction), args.Error(1)
+}

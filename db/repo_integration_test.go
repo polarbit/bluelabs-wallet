@@ -48,8 +48,8 @@ func TestRepositoryIntegration(t *testing.T) {
 		testGetWalletOk(tc, t)
 	})
 
-	t.Run("GetWalletBalanceOk", func(t *testing.T) {
-		testGetWalletBalanceOk(tc, t)
+	t.Run("GetWalletBalanceZeroOk", func(t *testing.T) {
+		testGetWalletBalanceZeroOk(tc, t)
 	})
 
 	t.Run("GetWalletBalanceReturnsNotFound", func(t *testing.T) {
@@ -70,6 +70,14 @@ func TestRepositoryIntegration(t *testing.T) {
 
 	t.Run("CreateTransactionFailsByConcurrency", func(t *testing.T) {
 		testCreateTransactionFailsByConcurrency(tc, t)
+	})
+
+	t.Run("GetWalletBalanceOk", func(t *testing.T) {
+		testGetWalletBalanceOk(tc, t)
+	})
+
+	t.Run("GetLatestTransactionOk", func(t *testing.T) {
+		testGetWalletBalanceOk(tc, t)
 	})
 }
 
@@ -96,7 +104,7 @@ func testGetWalletOk(tc *testContext, t *testing.T) {
 	assert.Equal(t, tc.w.Labels["Source"], w.Labels["Source"])
 }
 
-func testGetWalletBalanceOk(tc *testContext, t *testing.T) {
+func testGetWalletBalanceZeroOk(tc *testContext, t *testing.T) {
 	b, err := r.GetWalletBalance(tc.ctx, tc.w.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, 0., b)
@@ -168,5 +176,24 @@ func testCreateTransactionFailsByConcurrency(tc *testContext, t *testing.T) {
 		NewBalance:  30.,
 	}
 	err := r.CreateTransaction(tc.ctx, tc.w.ID, tr)
-	assert.ErrorIs(t, err, service.ErrTransactionFailedButRetriable)
+	assert.ErrorIs(t, err, service.ErrTransactionConsistency)
+}
+
+func testGetWalletBalanceOk(tc *testContext, t *testing.T) {
+	b, err := r.GetWalletBalance(tc.ctx, tc.w.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, 24.75, b)
+}
+
+func testGetLatestTransactionOk(tc *testContext, t *testing.T) {
+	lt, err := r.GetLatestTransaction(tc.ctx, tc.w.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, tc.t.ID, lt.ID)
+	assert.Equal(t, tc.t.RefNo, lt.RefNo)
+	assert.Equal(t, tc.t.Amount, lt.Amount)
+	assert.Equal(t, tc.t.Description, lt.Description)
+	assert.Equal(t, tc.t.Fingerprint, lt.Fingerprint)
+	assert.Equal(t, tc.t.Labels, lt.Labels)
+	assert.Equal(t, tc.t.OldBalance, lt.OldBalance)
+	assert.Equal(t, tc.t.NewBalance, lt.NewBalance)
 }
