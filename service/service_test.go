@@ -9,6 +9,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -27,7 +28,8 @@ func TestMain(m *testing.M) {
 		mock.MatchedBy(func(w *Wallet) bool { return w.ExternalID == "100" })).
 		Return(ErrWalletAlreadyExists)
 
-	svc = NewWalletService(mok)
+	logger := log.Logger
+	svc = NewWalletService(mok, logger)
 
 	exitcode := m.Run()
 	os.Exit(exitcode)
@@ -36,7 +38,7 @@ func TestMain(m *testing.M) {
 func TestGetWallet(t *testing.T) {
 	t.Run("WalletFound", func(t *testing.T) {
 		w, err := svc.GetWallet(context.Background(), 10)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, w)
 		assert.Equal(t, 10, w.ID)
 	})
@@ -44,7 +46,7 @@ func TestGetWallet(t *testing.T) {
 	t.Run("WalletNotFound", func(t *testing.T) {
 		w, err := svc.GetWallet(context.Background(), 11)
 		assert.Nil(t, w)
-		assert.NotNil(t, err)
+		assert.NoError(t, err)
 		assert.True(t, errors.Is(err, ErrWalletNotFound))
 	})
 }
@@ -54,7 +56,7 @@ func TestCreateWallet(t *testing.T) {
 		w, err := svc.CreateWallet(context.Background(), &WalletModel{
 			ExternalID: "99",
 		})
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, w)
 		assert.Equal(t, "99", w.ExternalID)
 		assert.Equal(t, 99, w.ID)
@@ -64,8 +66,7 @@ func TestCreateWallet(t *testing.T) {
 		w, err := svc.CreateWallet(context.Background(), &WalletModel{
 			ExternalID: "100",
 		})
-		assert.NotNil(t, err)
+		assert.ErrorIs(t, err, ErrWalletAlreadyExists)
 		assert.Nil(t, w)
-		assert.True(t, errors.Is(err, ErrWalletAlreadyExists))
 	})
 }

@@ -10,29 +10,30 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/labstack/gommon/log"
+	"github.com/ziflex/lecho/v2"
+
 	"github.com/polarbit/bluelabs-wallet/config"
 	"github.com/polarbit/bluelabs-wallet/db"
 	"github.com/polarbit/bluelabs-wallet/service"
+	"github.com/rs/zerolog/log"
 )
 
 func StartAPI() {
-	e := echo.New()
+
+	logger := log.Logger
 
 	// init wallet handler
 	h := func() *walletHandler {
 		wc := config.ReadConfig()
-		repo := db.NewRepository(wc.Db)
-		service := service.NewWalletService(repo)
+		repo := db.NewRepository(wc.Db, logger)
+		service := service.NewWalletService(repo, logger)
 		validate := validator.New()
 		return &walletHandler{s: service, v: validate}
 	}()
 
-	// Set validator
-	e.Logger.SetLevel(log.DEBUG)
-	e.Validator = &CustomEchoValidator{v: h.v}
-
-	// Middleware
+	e := echo.New()
+	e.Logger = lecho.From(logger)                          // Set zerlogger as echo logger
+	e.Validator = &CustomEchoValidator{v: validator.New()} // Set validator
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
@@ -44,7 +45,7 @@ func StartAPI() {
 
 	// Start server
 	go func() {
-		if err := e.Start(":1323"); err != nil && err != http.ErrServerClosed {
+		if err := e.Start(":8080"); err != nil && err != http.ErrServerClosed {
 			e.Logger.Fatal("shutting down the server")
 		}
 	}()

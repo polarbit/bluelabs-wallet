@@ -12,12 +12,9 @@
 ### DUMP
 - Inside the container, password is not required
 $ docker run --name db -e POSTGRES_PASSWORD=1234 -p 5342:5342 -d postgres
-$ create database walletdb;
-& create table
 
-pgx
-- postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
 
+# Create and Drop database
 go run . db -d "postgresql://postgres:1234@localhost" --initdb walletdb
 go run . db -d "postgresql://postgres:1234@localhost" --dropdb walletdb
 
@@ -27,13 +24,16 @@ psql> \l
 psql> \dt
 select * from pg_catalog.pg_tables where tablename like 'wallet%';
 
-# Changed db name from default to hede
-DB_DATABASE=hede go run . config
+# Environment variables
+DB_DATABASE="postgresql://postgres:1234@localhost"
+LOGLEVEL=fatal 
 
 # Run integration tests
 go test ./...  -v -tags integration
-# if integration tests run; unit tests will not run (using build tags)
+Note: if integration tests run; unit tests will not run (using build tags)
 
 
 ### TODO
-- Move config.json and docker-compose into 
+- Move config.json and docker-compose into
+- Use connection pooling; or add to your notes.
+- Repo: Other fields can be tested for min-max length, existance etc.

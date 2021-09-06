@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rs/zerolog"
 	"github.com/spf13/viper"
 )
 
 type AppConfig struct {
-	Db string `mapstructure:"db"`
+	Db       string `mapstructure:"db"`
+	LogLevel string `mapstructure:"loglevel"`
 }
 
 func ReadConfig() *AppConfig {
@@ -32,6 +34,10 @@ func ReadConfig() *AppConfig {
 	var config AppConfig
 	if err := viper.Unmarshal(&config); err != nil {
 		panic(fmt.Errorf("fatal error config file: %w", err))
+	}
+
+	if _, err := zerolog.ParseLevel(config.LogLevel); err != nil {
+		panic(fmt.Errorf("loglevel is incorrect, valid values are: panic, fatal, error, warning, debug, trace. err:%v", err))
 	}
 
 	return &config

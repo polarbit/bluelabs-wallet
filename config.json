@@ -1,3 +1,4 @@
 {
-    "Db" : "postgres://postgres:1234@localhost/walletdb"
+    "Db" : "postgres://postgres:1234@localhost/walletdb",
+    "LogLevel" : "debug"
 }

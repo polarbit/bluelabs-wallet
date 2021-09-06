@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	"github.com/rs/zerolog"
 )
 
 type Service interface {
@@ -16,19 +18,25 @@ type Repository interface {
 	CreateWallet(ctx context.Context, w *Wallet) error
 	GetWallet(ctx context.Context, wid int) (*Wallet, error)
 	GetWalletBalance(ctx context.Context, wid int) (float64, error)
+	CreateTransaction(ctx context.Context, wid int, t *Transaction) error
 }
 
 var (
-	ErrWalletNotFound      = errors.New("wallet not found")
-	ErrWalletAlreadyExists = errors.New("Wallet already exists with same external id")
+	ErrWalletNotFound                        = errors.New("wallet not found")
+	ErrWalletAlreadyExists                   = errors.New("wallet already exists with same external id")
+	ErrTransactionFailedButRetriable         = errors.New("transaction failed due to consistency but retriable")
+	ErrDatabaseConnectionFailed              = errors.New("could not connect to the database")
+	ErrTransactionAlreadyExistsByRefNo       = errors.New("a transaction already exists with same refno")
+	ErrTransactionAlreadyExistsByFingerprint = errors.New("a transaction already exists with same fingerprint")
 )
 
 type walletService struct {
 	r Repository
+	l zerolog.Logger
 }
 
-func NewWalletService(r Repository) Service {
-	return &walletService{r: r}
+func NewWalletService(r Repository, logger zerolog.Logger) Service {
+	return &walletService{r: r, l: logger}
 }
 
 func (c *walletService) CreateWallet(ctx context.Context, m *WalletModel) (*Wallet, error) {

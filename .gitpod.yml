@@ -25,5 +25,10 @@ vscode:
 ports:
   - port: 5050
     visibility: public
+    onOpen: ignore
   - port: 5432
     visibility: public
+    onOpen: ignore
+  - port: 8080
+    visibility: public
+    onOpen: ignore
