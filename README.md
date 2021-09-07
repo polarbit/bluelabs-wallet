@@ -1,6 +1,14 @@
 # Wallet
 [![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/polarbit/bluelabs-wallet)
 
+## Implementation Notes
+- a REST api is provided with minimal endpoints (echo)
+- I made use of a sql database (postgres) to achieve consistency
+- consistency is achieved by optimistic concurrency and unique keys (via sql database)
+- idempotency is achieved by "fingerprint" value (api returns http conflict 409 in case of retry)
+- implemented a cli style app (cobra)
+- unit tests are written for service package
+- integration tests are written for api and db packages
 
 ## How to Run
 - You need go:1.17, docker and docker-compose
@@ -13,19 +21,25 @@
 
 ## Enpoints
 
+##### Create Wallet
+- `POST /wallets`
+- *externalid* value should be unique, enables idempotency
+- *labels* is a string dictionary to attach metadata
+- response json includes *id* (int)
+- request:
 ```json
-# POST /wallets
 {
-    "externalId" : "userid-123",     // should be unique
-    "labels" : {                    // string dictionary for metadata
+    "externalId" : "userid-123",
+    "labels" : {
         "somekey" : "somevalue"
     }
 }
-// Idempotency is achieved by "externalid" value
 ```
 
+##### Get Wallet
+- `GET  /wallets/:id`
+- response: 
 ```json
-# GET  /wallets/:id
 {
     "id": 9180,
     "labels" : {
@@ -34,27 +48,34 @@
     "externalId" : "userid-123",
     "created" : "2021-09-07T01:42:00"
 }
-``` 
-
+```  
+  
+##### Add Transaction
+- `POST  /wallets/:id/transactions`
+- *amount* may be negative or positive (should be <= -1.0 or >=1.0)
+- *fingerprint* should be unique, enables idempotency
+- *labels* is a string dictionary to attach metadata
+- request:
 ```json
-# POST  /wallets/:id/transactions  
 {
-    "amount" : 10.0,             // amount may be negative or positive,
-    "fingerprint" : "TX123A001", // like idempotency key; should be unique
-    "labels" : {                 // string dictionary for metadata
+    "amount" : 10.0,             
+    "fingerprint" : "TX123A001",
+    "labels" : { 
         "couponId" : "10004871", 
     },
     "description" : "won ticket #10004870"
 }
-// Idempotency is achieved by "fingerprint" value
-// Consistency is achieved by optimistic concurrency
 ```
-                                    
+  
+##### Get Latest Transaction
+- `GET  /wallets/:id/transactions/latest`
+- returs latest transaction of the requested wallet
+- *refno:* a transaction sequence number per wallet, strengthens consistency
+- response: 
 ```json
-# GET  /wallets/:id/transactions/latest
-// Returs latest transaction of given wallet
-    "id" : "{uuid}"
-    "refno" : 2     // a tx sequence number per single wallet
+{
+    "id" : "{uuid}",
+    "refno" : 2,
     "amount" : 10.0,             
     "fingerprint" : "TX123A001",
     "labels" : {                 
@@ -67,13 +88,17 @@
 }
 ```
 
+##### Get Balance
+- `GET  /wallets/:id/balance`
+- returs current balance of the requested wallet
+- only return a float value; not a json object
 ```json
-# GET  /wallets/:id/balance 
-// Returs current balance of given wallet
-// Only return a float value; not a json object
+35.0
 ``` 
 
-### Run tests
+## Other Notes
+
+#### Run tests
 ```bash
 $ go test ./...  -v
 $ go test ./...  -v -tags integration
@@ -95,15 +120,21 @@ $ DB_DATABASE="postgresql://postgres:1234@localhost/testdb"
 $ LOGLEVEL=info
 ```
 
-### TODO
+### Refactor TODO
 - In api integrationt tests, only happy path is implemented. Implement the rest.
 - Use pgx connection pooling in repository
 - Run validations also at wallet service (validations only run at api handlers at the moment) 
 
-### Missing Features
+### Missing & Possible Features
+- Functional
 - Get wallet by external id
 - Get transaction by fingerprint
-- Searching wallets by label
-- Searching transactions by label
-- Searching transactions by wallet
-- Enable api authentication
+- Search wallets by label
+- Search transactions by label
+- List transactions by wallet 
+- Publish external events (WalletCreated, TransactionCreated, BalanceChanged)
+- Technical:
+  - enable api authentication
+  - enable OpenAPI/Swagger definitions and discovery
+  - enable healtcheck and metrics endpoints (may include custom metrics)
+  - implement tracing for critical endpoints
