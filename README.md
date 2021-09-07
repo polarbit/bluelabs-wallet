@@ -66,6 +66,7 @@
     },
     "description" : "won ticket #10004870"
 }
+```
 - request2:
 ```json
 {
@@ -79,7 +80,6 @@
     },
     "description" : "won ticket #10004870"
 }
-
 ```
   
 ##### Get Latest Transaction
