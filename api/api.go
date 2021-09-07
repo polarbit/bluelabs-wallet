@@ -28,14 +28,6 @@ func StartAPI() {
 		return &walletHandler{s: service, v: validate}
 	}()
 
-	// TODO: Push validator and minamount logic to elsewhere
-	// h.v.RegisterValidation("minamount", func(fl validator.FieldLevel) bool {
-	// 	if fl.Field().Kind() != reflect.Float32 && fl.Field().Kind() != reflect.Float64 {
-	// 		return false
-	// 	}
-	// 	return math.Abs(fl.Field().Float()) >= 1.0
-	// })
-
 	e := echo.New()
 	// e.Logger = lecho.From(log.Logger)                      // Set zerlogger as echo logger
 	e.Validator = &CustomEchoValidator{v: h.v} // Set validator
