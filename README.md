@@ -55,16 +55,31 @@
 - *amount* may be negative or positive (should be <= -1.0 or >=1.0)
 - *fingerprint* should be unique, enables idempotency
 - *labels* is a string dictionary to attach metadata
-- request:
+- request1:
 ```json
 {
     "amount" : 10.0,             
     "fingerprint" : "TX123A001",
     "labels" : { 
-        "couponId" : "10004871", 
+        "couponId" : "10004871",
+        "reason": "prize"
     },
     "description" : "won ticket #10004870"
 }
+- request2:
+```json
+{
+    "amount" : -5.0,             
+    "fingerprint" : "job-0018254",
+    "labels" : { 
+        "paypal_referenceid" : "PP00CX098", 
+        "reason": "withdraw",
+        "withdraw_target" : "paypal",
+        "withdraw_jobid" : "job-0018254"
+    },
+    "description" : "won ticket #10004870"
+}
+
 ```
   
 ##### Get Latest Transaction
