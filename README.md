@@ -141,15 +141,20 @@ $ LOGLEVEL=info
 - Run validations also at wallet service (validations only run at api handlers at the moment) 
 
 ### Missing & Possible Features
-- Functional
+- Void a recent transaction
 - Get wallet by external id
 - Get transaction by fingerprint
 - Search wallets by label
 - Search transactions by label
 - List transactions by wallet 
-- Publish external events (WalletCreated, TransactionCreated, BalanceChanged)
+- Publish external events (WalletCreated, TransactionCreated, BalanceChanged, TransactionVoid)
 - Technical:
   - enable api authentication
   - enable OpenAPI/Swagger definitions and discovery
   - enable healtcheck and metrics endpoints (may include custom metrics)
   - implement tracing for critical endpoints
+
+## Design Question: Withdraw Money to Paypal Account
+I designed and sketched a timeline flow. You can find at places below:
+- Design Url: https://excalidraw.com/#json=4622116301307904,MA0O2YePaZ-fPR8wce1xzw
+- Also the file named *"withdraw-money-design.svg"* in the repository: 
